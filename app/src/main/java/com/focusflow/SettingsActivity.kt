@@ -97,5 +97,11 @@ class SettingsActivity : AppCompatActivity() {
         binding.autoWorkSwitch.setOnCheckedChangeListener { _, isChecked ->
             settings.autoStartWork = isChecked
         }
+
+        binding.coffeeSection.setOnClickListener {
+            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, 
+                android.net.Uri.parse("https://www.buymeacoffee.com/charleshartmann"))
+            startActivity(intent)
+        }
     }
 }

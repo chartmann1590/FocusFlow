@@ -82,6 +82,12 @@ git clone https://github.com/chartmann1590/FocusFlow.git
 ### Pre-built APK
 Download the latest APK from the [Releases](https://github.com/chartmann1590/FocusFlow/releases) page.
 
+## Support the Project
+
+If FocusFlow helps you stay productive, consider [buying me a coffee](https://www.buymeacoffee.com/charleshartmann)!
+
+[![Buy Me A Coffee](https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&slug=charleshartmann&button_colour=FF5F5F&font_colour=ffffff&font_family=Inter&coffee_colour=FFDD00)](https://www.buymeacoffee.com/charleshartmann)
+
 ## License
 
 MIT License - See [LICENSE](LICENSE) for details.
