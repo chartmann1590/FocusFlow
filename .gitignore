@@ -1,0 +1,29 @@
+# Build output
+app/build/
+.gradle/
+
+# IDE
+.idea/
+*.iml
+local.properties
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Gradle
+gradle/wrapper/gradle-wrapper.jar
+
+# Debug
+*.apk
+*.aab
+
+# Local config
+local.properties
+
+# Environment
+.env
+.env.local
