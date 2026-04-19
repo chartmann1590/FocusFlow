@@ -11,10 +11,6 @@ on:
         required: false
         type: string
 
-env:
-  ANDROID_HOME: /opt/android-sdk
-  ANDROID_SDK_ROOT: /opt/android-sdk
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -30,9 +26,11 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
       
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+      
       - name: Create local.properties
-        run: |
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
+        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
       
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -61,30 +59,14 @@ jobs:
           path: .
       
       - name: List files
-        run: ls -la && ls -la app/build/outputs/apk/release/ 2>/dev/null || true
-      
-      - name: Get APK filename
-        id: apk_info
-        run: |
-          if [ -f "app/build/outputs/apk/release/app-release.apk" ]; then
-            APK_FILE="app/build/outputs/apk/release/app-release.apk"
-          else
-            APK_FILE=$(find . -name "*.apk" -type f | head -1)
-          fi
-          echo "Found APK: $APK_FILE"
-          echo "file=$APK_FILE" >> $GITHUB_OUTPUT
+        run: ls -la app/build/outputs/apk/release/
       
       - name: Generate checksum
         run: |
-          if [ -f "app/build/outputs/apk/release/app-release.apk" ]; then
-            APK_FILE="app/build/outputs/apk/release/app-release.apk"
-          else
-            APK_FILE=$(find . -name "*.apk" -type f | head -1)
-          fi
           echo "# FocusFlow Release" > checksums.txt
           echo "" >> checksums.txt
           echo "SHA256:" >> checksums.txt
-          sha256sum "$APK_FILE" >> checksums.txt
+          sha256sum app/build/outputs/apk/release/*.apk >> checksums.txt
           cat checksums.txt
       
       - name: Get version
@@ -92,10 +74,8 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.version }}" != "" ]; then
             VERSION="${{ github.event.inputs.version }}"
-          elif [ "${{ github.ref_name }}" != "" ]; then
-            VERSION="${{ github.ref_name }}"
           else
-            VERSION="v${{ github.run_number }}"
+            VERSION="${{ github.ref_name }}"
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
       
@@ -109,13 +89,6 @@ jobs:
             
             A beautiful Pomodoro timer and task manager app for Android.
             
-            ### Features
-            - Pomodoro Timer with presets
-            - Task Management with categories
-            - Statistics & Weekly Reports
-            - Daily Streak Tracking
-            - Ambient Sounds
-            
             ### Website
             https://chartmann1590.github.io/FocusFlow/
             
@@ -124,7 +97,7 @@ jobs:
             2. Enable 'Install from unknown sources'
             3. Open and install
           files: |
-            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/apk/release/*.apk
             checksums.txt
           draft: false
           prerelease: false
