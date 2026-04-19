@@ -103,7 +103,9 @@ test.describe('FocusFlow Landing Page - E2E Tests', () => {
 
   test('19. Navigation bar is fixed', async ({ page }) => {
     const nav = page.locator('.nav');
-    await expect(nav).toHaveClass(/fixed/);
+    await expect(nav).toBeVisible();
+    const position = await nav.evaluate(el => window.getComputedStyle(el).position);
+    expect(position).toBe('fixed');
   });
 
   test('20. Mobile menu toggle exists', async ({ page }) => {
@@ -112,8 +114,9 @@ test.describe('FocusFlow Landing Page - E2E Tests', () => {
   });
 
   test('21. Logo is visible and linked', async ({ page }) => {
-    const logo = page.locator('.logo');
+    const logo = page.locator('.nav .logo');
     await expect(logo).toBeVisible();
+    await expect(logo).toHaveAttribute('href', /FocusFlow|#/);
   });
 
   test('22. SEO meta tags are present', async ({ page }) => {
@@ -147,12 +150,12 @@ test.describe('FocusFlow Landing Page - E2E Tests', () => {
     await expect(footer).toBeVisible();
   });
 
-  test('26. Fade-in animations work', async ({ page }) => {
+  test('26. Feature cards are visible on scroll', async ({ page }) => {
     await page.goto(BASE_URL);
     await page.evaluate(() => window.scrollTo(0, 500));
     await page.waitForTimeout(700);
     const fadedElement = page.locator('.feature-card').first();
-    await expect(fadedElement).toHaveClass(/visible/);
+    await expect(fadedElement).toBeInViewport();
   });
 
   test('27. Responsive layout - mobile viewport', async ({ page }) => {
