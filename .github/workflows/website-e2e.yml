@@ -1,0 +1,77 @@
+name: Website E2E Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install -D @playwright/test playwright
+      
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      
+      - name: Wait for GitHub Pages to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 5
+          retry_wait_seconds: 10
+          command: |
+            echo "Waiting for GitHub Pages to deploy..."
+            for i in {1..30}; do
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://chartmann1590.github.io/FocusFlow/)
+              if [ "$STATUS" = "200" ]; then
+                echo "Site is available!"
+                exit 0
+              fi
+              echo "Attempt $i/30 - Status: $STATUS"
+              sleep 10
+            done
+            echo "Site may still be deploying, continuing with tests..."
+      
+      - name: Run Playwright tests
+        run: npx playwright test --project=chromium --reporter=list
+      
+      - name: Generate test report
+        if: always()
+        run: |
+          if [ -f "playwright-report/index.html" ]; then
+            echo "Test report generated at: playwright-report/index.html"
+          fi
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+      
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-screenshots
+          path: test-results/**/screenshots/
+          retention-days: 14
+          if-no-files-found: ignore
