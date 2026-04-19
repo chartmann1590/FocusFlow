@@ -35,13 +35,13 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       
-      - name: Build Release APK
-        run: ./gradlew assembleRelease --no-daemon
+      - name: Build APK
+        run: ./gradlew assembleDebug --no-daemon
       
       - name: Rename APK
         id: rename
         run: |
-          cp app/build/outputs/apk/release/app-release.apk FocusFlow-${{ github.ref_name }}.apk
+          cp app/build/outputs/apk/debug/app-debug.apk FocusFlow-${{ github.ref_name }}.apk
           ls -la *.apk
       
       - name: Upload Release APK
