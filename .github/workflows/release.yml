@@ -3,14 +3,7 @@ name: Build and Release
 on:
   push:
     branches: [main]
-    tags:
-      - 'v*'
   workflow_dispatch:
-    inputs:
-      release_name:
-        description: 'Release name'
-        required: false
-        type: string
 
 jobs:
   build:
@@ -27,17 +20,15 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
       
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+      
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       
       - name: Build Release APK
         run: ./gradlew assembleRelease --no-daemon
-      
-      - name: Generate SHA256 hash
-        id: hash
-        run: |
-          cd app/build/outputs/apk/release
-          echo "hash=$(sha256sum *.apk | cut -d' ' -f1)" >> $GITHUB_OUTPUT
       
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
@@ -51,98 +42,41 @@ jobs:
     needs: build
     permissions:
       contents: write
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      release_id: ${{ steps.create_release.outputs.id }}
     
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
       - name: Download APK
         uses: actions/download-artifact@v4
         with:
           name: release-apk
           path: .
       
-      - name: Get APK info
+      - name: List files
+        run: ls -la
+      
+      - name: Get APK filename
         id: apk_info
         run: |
-          APK_FILE=$(ls *.apk | head -1)
+          APK_FILE=$(find . -name "*.apk" -type f | head -1)
+          echo "Found APK: $APK_FILE"
           echo "file=$APK_FILE" >> $GITHUB_OUTPUT
-          FILE_SIZE=$(stat -c%s "$APK_FILE")
-          echo "size=$FILE_SIZE" >> $GITHUB_OUTPUT
       
-      - name: Prepare Release Notes
-        id: release_notes
+      - name: Generate checksum
         run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          if [ -z "$VERSION" ]; then
-            VERSION="dev-$(date +%Y%m%d-%H%M%S)"
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          
-          NOTES="## FocusFlow v$VERSION
-          
-          ### What's New
-          - Performance improvements
-          - Bug fixes
-          
-          ### Download
-          - Install the APK below
-          - **Website:** https://chartmann1590.github.io/FocusFlow/
-          
-          ### Installation
-          1. Download the APK
-          2. Enable 'Install from unknown sources' on your device
-          3. Open and install
-          
-          Built with ❤️"
-          echo "notes<<EOF" >> $GITHUB_OUTPUT
-          echo "$NOTES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          APK_FILE=$(find . -name "*.apk" -type f | head -1)
+          echo "checksum=$(sha256sum $APK_FILE | cut -d' ' -f1)" >> $GITHUB_OUTPUT
       
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: "FocusFlow v${{ env.VERSION_NAME }}"
-          body: ${{ env.RELEASE_NOTES }}
+          files: |
+            *.apk
+            checksums.txt
+          generate_release_notes: true
+          name: FocusFlow v${{ github.run_number }}
           draft: false
           prerelease: false
-      
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./*.apk
-          asset_name: FocusFlow-${{ steps.release_notes.outputs.version }}.apk
-          asset_content_type: application/vnd.android.package-archive
-      
-      - name: Generate Checksum File
-        run: |
-          echo "# FocusFlow v${{ steps.release_notes.outputs.version }}" > checksums.txt
-          echo "" >> checksums.txt
-          echo "SHA256 Checksums:" >> checksums.txt
-          echo "" >> checksums.txt
-          for f in *.apk; do
-            echo "$f: $(sha256sum $f | cut -d' ' -f1)" >> checksums.txt
-          done
-      
-      - name: Upload Checksum
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./checksums.txt
-          asset_name: checksums.txt
-          asset_content_type: text/plain
 
   release-info:
     runs-on: ubuntu-latest
@@ -157,5 +91,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '## Release Ready! 🚀\n\nAPK has been built and uploaded.\n\n**Website:** https://chartmann1590.github.io/FocusFlow/\n**Download:** https://github.com/chartmann1590/FocusFlow/releases/latest'
+              body: '## 🚀 Build Successful!\n\nAPK has been built and released!\n\n**Website:** https://chartmann1590.github.io/FocusFlow/\n**Download:** https://github.com/chartmann1590/FocusFlow/releases/latest'
             })
