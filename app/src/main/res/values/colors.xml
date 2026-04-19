@@ -10,6 +10,7 @@
     <color name="white">#FFFFFF</color>
     <color name="input_background">#33334D</color>
     <color name="switch_track">#4A4A6A</color>
+    <color name="text_muted">#666680</color>
     <color name="priority_high">#FF6B6B</color>
     <color name="priority_medium">#FFE66D</color>
     <color name="priority_low">#4ECDC4</color>
