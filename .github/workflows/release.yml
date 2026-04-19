@@ -38,11 +38,17 @@ jobs:
       - name: Build Release APK
         run: ./gradlew assembleRelease --no-daemon
       
+      - name: Rename APK
+        id: rename
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk FocusFlow-${{ github.ref_name }}.apk
+          ls -la *.apk
+      
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
-          path: app/build/outputs/apk/release/*.apk
+          name: focusflow-apk
+          path: FocusFlow-${{ github.ref_name }}.apk
           retention-days: 30
 
   create-release:
@@ -55,28 +61,25 @@ jobs:
       - name: Download APK
         uses: actions/download-artifact@v4
         with:
-          name: release-apk
+          name: focusflow-apk
           path: .
       
       - name: List files
-        run: ls -la app/build/outputs/apk/release/
+        run: ls -la *.apk
       
       - name: Generate checksum
+        id: checksum
         run: |
           echo "# FocusFlow Release" > checksums.txt
           echo "" >> checksums.txt
           echo "SHA256:" >> checksums.txt
-          sha256sum app/build/outputs/apk/release/*.apk >> checksums.txt
+          sha256sum *.apk >> checksums.txt
           cat checksums.txt
       
       - name: Get version
         id: version
         run: |
-          if [ "${{ github.event.inputs.version }}" != "" ]; then
-            VERSION="${{ github.event.inputs.version }}"
-          else
-            VERSION="${{ github.ref_name }}"
-          fi
+          VERSION="${{ github.ref_name }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
       
       - name: Create Release
@@ -97,7 +100,7 @@ jobs:
             2. Enable 'Install from unknown sources'
             3. Open and install
           files: |
-            app/build/outputs/apk/release/*.apk
+            *.apk
             checksums.txt
           draft: false
           prerelease: false
