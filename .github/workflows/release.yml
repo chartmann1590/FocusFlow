@@ -2,14 +2,8 @@ name: Build and Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version (e.g., v1.0.1)'
-        required: false
-        type: string
 
 jobs:
   build:
@@ -38,17 +32,23 @@ jobs:
       - name: Build APK
         run: ./gradlew assembleDebug --no-daemon
       
-      - name: Rename APK
-        id: rename
+      - name: Get version info
+        id: version
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk FocusFlow-${{ github.ref_name }}.apk
+          VERSION="build-$(echo ${{ github.sha }} | cut -c1-7)"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "short_sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+      
+      - name: Rename APK
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk FocusFlow-${{ steps.version.outputs.version }}.apk
           ls -la *.apk
       
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: focusflow-apk
-          path: FocusFlow-${{ github.ref_name }}.apk
+          path: FocusFlow-${{ steps.version.outputs.version }}.apk
           retention-days: 30
 
   create-release:
@@ -68,9 +68,10 @@ jobs:
         run: ls -la *.apk
       
       - name: Generate checksum
-        id: checksum
         run: |
-          echo "# FocusFlow Release" > checksums.txt
+          echo "# FocusFlow Build" > checksums.txt
+          echo "" >> checksums.txt
+          echo "Commit: ${{ github.sha }}" >> checksums.txt
           echo "" >> checksums.txt
           echo "SHA256:" >> checksums.txt
           sha256sum *.apk >> checksums.txt
@@ -79,7 +80,7 @@ jobs:
       - name: Get version
         id: version
         run: |
-          VERSION="${{ github.ref_name }}"
+          VERSION="build-$(echo ${{ github.sha }} | cut -c1-7)"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
       
       - name: Create Release
